@@ -424,9 +424,19 @@ impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display> AvlTree<T> {
         });
     }
 
-    /// Check if a value is contained in the tree
+    /// Check if a value is contained in the tree with Ord trait only
     pub fn contains(&self, value: &T) -> bool {
         Node::get(&self.root, value).is_some()
+    }
+
+    /// Check if a value is contained in the tree
+    pub fn contains_exact(&self, value: &T) -> bool {
+
+        let res=Node::get(&self.root, value);
+        if res.is_none(){
+            return false;
+        }
+        return &res.as_ref().unwrap().value==value;
     }
 
     /// Check if the tree is empty or not

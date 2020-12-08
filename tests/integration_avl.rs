@@ -86,10 +86,13 @@ fn test_avl() {
     assert_eq!(tree.height(), tree.depth());
     assert_eq!(tree.min().expect("No Min"), test_payload_3);
     // Try to delete 420 (we don't know the other field)
-    let res=tree.get(&Payload {
+    let test_payload_6=Payload {
         age: 420,
         name: String::new()
-    });
+    };
+    let res=tree.get(&test_payload_6);
+    assert!(tree.contains(&test_payload_6));
+    assert!(!tree.contains_exact(&test_payload_6));
     // we got testpayload2 without knowing name
     assert!(res.is_some());
     assert_eq!(res.as_ref().unwrap(), &test_payload_2);
@@ -97,6 +100,7 @@ fn test_avl() {
     assert!(res.is_ok());
     assert_eq!(tree.count(), 3);
     assert!(tree.contains(&test_payload_5));
+    assert!(tree.contains_exact(&test_payload_5));
     assert_eq!(tree.max().expect("No max"), test_payload_5);
     tree.clear();
     assert!(tree.is_balanced());
