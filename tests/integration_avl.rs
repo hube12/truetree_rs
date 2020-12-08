@@ -96,6 +96,8 @@ fn test_avl() {
     let res=tree.remove(&res.as_ref().unwrap());
     assert!(res.is_ok());
     assert_eq!(tree.count(), 3);
+    assert!(tree.contains(&test_payload_5));
+    assert_eq!(tree.max().expect("No max"), test_payload_5);
     tree.clear();
     assert!(tree.is_balanced());
     assert_eq!(tree.depth(), 0);

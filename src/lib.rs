@@ -109,6 +109,22 @@ mod test_tree {
         assert_eq!(tree.root.as_ref().unwrap().children[Side::Left as usize].as_ref().unwrap().value, TEST_1);
     }
 
+    #[test]
+    fn test_contains(){
+        let mut tree:AvlTree<u64>=AvlTree::new();
+        tree.insert(&TEST_1).expect("Insert failed")
+            .insert(&TEST_2).expect("Insert failed")
+            .insert(&TEST_3).expect("Insert failed")
+            .insert(&TEST_4).expect("Insert failed");
+
+        assert!(tree.contains(&TEST_1));
+        assert!(tree.contains(&TEST_2));
+        assert!(tree.contains(&TEST_3));
+        assert!(tree.contains(&TEST_4));
+        assert!(!tree.contains(&TEST_5));
+        tree.insert(&TEST_5).expect("Insert failed");
+        assert!(tree.contains(&TEST_5));
+    }
 
     #[test]
     fn test_insert_complex() {
