@@ -4,6 +4,8 @@ use std::cmp::max;
 use std::fmt::{Debug, Display};
 use std::mem::{replace, swap};
 use std::ops::Not;
+use std::collections::HashSet;
+use std::hash::Hash;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[repr(u8)]
@@ -23,20 +25,21 @@ impl Not for Side {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct Node<T: Clone + Ord + Eq + Debug + Display> {
+struct Node<T: Clone + Ord + Eq + Debug + Display + Hash> {
     children: [Tree<T>; 2],
     value: T,
+    duplicates: HashSet<T>,
     height: usize,
 }
 
-impl<T: Clone + Ord + Eq + Debug + Display> fmt::Pointer for Node<T> {
+impl<T: Clone + Ord + Eq + Debug + Display + Hash> fmt::Pointer for Node<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let ptr = self as *const Self;
         fmt::Pointer::fmt(&ptr, f)
     }
 }
 
-impl<T: Clone + Ord + Eq + Debug + Display> fmt::Display for Node<T> {
+impl<T: Clone + Ord + Eq + Debug + Display + Hash> fmt::Display for Node<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -45,19 +48,45 @@ impl<T: Clone + Ord + Eq + Debug + Display> fmt::Display for Node<T> {
 type Tree<T> = Option<Box<Node<T>>>;
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct AvlTree<T: Clone + Ord + Eq + Debug + Display> {
+pub struct AvlTree<T: Clone + Ord + Eq + Debug + Display + Hash> {
     root: Tree<T>,
 }
 
 #[cfg(test)]
 mod test_tree {
     use super::*;
+    use std::cmp::Ordering;
+
+    #[derive(Clone, Eq, PartialEq, Debug, Hash)]
+    struct Position {
+        x: i32,
+        y: i32,
+    }
+
+    impl Ord for Position {
+        fn cmp(&self, other: &Self) -> Ordering {
+            self.x.cmp(&other.x)
+        }
+    }
+
+    impl PartialOrd for Position {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+
+    impl fmt::Display for Position {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "\"{},{}\"", self.x, self.y)
+        }
+    }
 
     const TEST_1: u64 = 42;
     const TEST_2: u64 = 420;
     const TEST_3: u64 = 66;
     const TEST_4: u64 = 88;
     const TEST_5: u64 = 99;
+
 
     #[test]
     fn test_create() {
@@ -98,11 +127,11 @@ mod test_tree {
         assert!(res.is_ok());
         let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_3);
         assert!(res.is_ok());
         assert!(!tree.is_empty());
         assert!(tree.root.is_some());
-        assert_eq!(tree.root.as_ref().unwrap().value, TEST_2);
+        assert_eq!(tree.root.as_ref().unwrap().value, TEST_3);
         assert!(tree.root.as_ref().unwrap().children[Side::Right as usize].is_some());
         assert_eq!(tree.root.as_ref().unwrap().children[Side::Right as usize].as_ref().unwrap().value, TEST_2);
         assert!(tree.root.as_ref().unwrap().children[Side::Left as usize].is_some());
@@ -110,8 +139,8 @@ mod test_tree {
     }
 
     #[test]
-    fn test_contains(){
-        let mut tree:AvlTree<u64>=AvlTree::new();
+    fn test_contains() {
+        let mut tree: AvlTree<u64> = AvlTree::new();
         tree.insert(&TEST_1).expect("Insert failed")
             .insert(&TEST_2).expect("Insert failed")
             .insert(&TEST_3).expect("Insert failed")
@@ -129,35 +158,35 @@ mod test_tree {
     #[test]
     fn test_insert_complex() {
         let mut tree: AvlTree<u64> = AvlTree::new();
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_1);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&1);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&2);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&3);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&4);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&5);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&6);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&7);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&8);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&9);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&10);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&11);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&12);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&13);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&14);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&15);
         assert!(res.is_ok());
         assert!(!tree.is_empty());
         assert_eq!(tree.root.unwrap().height, 4)
@@ -184,34 +213,14 @@ mod test_tree {
         assert!(res.is_ok());
         let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_3);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_4);
         assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
-        assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
-        assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
-        assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
-        assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
-        assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
-        assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
-        assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
-        assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
-        assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
-        assert!(res.is_ok());
-        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_2);
+        let res: Result<&mut AvlTree<u64>, &str> = tree.insert(&TEST_5);
         assert!(res.is_ok());
         assert!(!tree.is_empty());
-        assert_eq!(tree.root.as_ref().unwrap().value, TEST_2);
+        assert_eq!(tree.root.as_ref().unwrap().value, TEST_3);
         tree.clear();
         assert_eq!(tree.depth(), 0);
         tree.delete();
@@ -312,6 +321,56 @@ mod test_tree {
         assert_eq!(tree.width(), 3);
         assert_eq!(tree.count(), 5);
     }
+
+    #[test]
+    fn test_get_set() {
+        let mut tree: AvlTree<Position> = AvlTree::new();
+        let _res = tree.insert(&Position { x: 1, y: 0 }).expect("Failed insert")
+            .insert(&Position { x: 2, y: 0 }).expect("Failed insert")
+            .insert(&Position { x: 3, y: 0 }).expect("Failed insert")
+            .insert(&Position { x: 4, y: 0 }).expect("Failed insert")
+            .insert(&Position { x: 5, y: 1 }).expect("Failed insert")
+            .insert(&Position { x: 5, y: 2 }).expect("Failed insert")
+            .insert(&Position { x: 5, y: 3 }).expect("Failed insert")
+            .insert(&Position { x: 5, y: 4 }).expect("Failed insert")
+            .insert(&Position { x: 5, y: 5 }).expect("Failed insert");
+        assert_eq!(tree.get_set(&Position { x: 5, y: -1 }).len(), 5);
+    }
+
+    #[test]
+    fn test_remove_duplicates() {
+        let mut tree: AvlTree<Position> = AvlTree::new();
+        let _res = tree.insert(&Position { x: 1, y: 0 }).expect("Failed insert")
+            .insert(&Position { x: 2, y: 0 }).expect("Failed insert")
+            .insert(&Position { x: 3, y: 0 }).expect("Failed insert")
+            .insert(&Position { x: 5, y: 1 }).expect("Failed insert")
+            .insert(&Position { x: 5, y: 2 }).expect("Failed insert")
+            .insert(&Position { x: 5, y: 3 }).expect("Failed insert")
+            .insert(&Position { x: 5, y: 4 }).expect("Failed insert")
+            .insert(&Position { x: 5, y: 5 }).expect("Failed insert");
+        assert_eq!(tree.depth(), 3);
+        let res=tree.remove(&Position { x: 5, y: -1 });
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err(), "The value was not found");
+        assert_eq!(tree.depth(), 3);
+        let res=tree.remove(&Position { x: 5, y: 1 });
+        assert!(res.is_ok());
+        assert_eq!(tree.depth(), 3);
+        assert!(tree.contains(&Position { x: 5, y: 1 }));
+        assert!(!tree.contains_exact(&Position { x: 5, y: 1 }));
+        let res=tree.remove(&Position { x: 5, y: 2 });
+        assert!(res.is_ok());
+        assert_eq!(tree.depth(), 3);
+        let res=tree.remove(&Position { x: 5, y: 3 });
+        assert!(res.is_ok());
+        assert_eq!(tree.depth(), 3);
+        let res=tree.remove(&Position { x: 5, y: 4 });
+        assert!(res.is_ok());
+        assert_eq!(tree.depth(), 3);
+        let res=tree.remove(&Position { x: 5, y: 5 });
+        assert!(res.is_ok());
+        assert_eq!(tree.depth(), 2);
+    }
 }
 
 /// This is a balanced tree implementation (also called as AVL tree)
@@ -321,7 +380,7 @@ mod test_tree {
 /// The Eq trait is used to remove a node
 /// The Clone trait is used to copy the value inside the tree
 /// The Display trait is used to print/dump the tree
-impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display> AvlTree<T> {
+impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display + Hash> AvlTree<T> {
     /// Create a new tree (a tree is defined as an optional heap pointer to a Node of type T)
     /// By default we made a wrapper around the internal implementation with a root node
     pub fn new() -> Self {
@@ -408,12 +467,37 @@ impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display> AvlTree<T> {
 
     /// Get a value based only on Ord (not Eq), this allow loosy check in case of complex payload
     /// This return only the value or none, for a subtree see find
+    /// If duplicate keys this will return only the tree ordered first one
     pub fn get(&self, value: &T) -> Option<T> {
         let tree: &Tree<T> = Node::get(&self.root, value);
         return tree.as_ref().map_or(None, |x| Some(x.value.clone()));
     }
 
+    /// Get a value based only on Ord (not Eq), this allow loosy check in case of complex payload
+    /// This return only the value or none, for a subtree see find
+    /// If duplicate keys this will return the exact match if any else None
+    pub fn get_exact(&self, value: &T) -> Option<T> {
+        let set: HashSet<T> = self.get_set(value);
+        let value: Option<&T> = set.get(value);
+        return if value.is_none() { None } else { Some(value.unwrap().clone()) };
+    }
+
+    /// Get the set of value based only on Ord (not Eq), this allow loosy check in case of complex payload
+    /// This return only the value or none, for a subtree see find
+    pub fn get_set(&self, value: &T) -> HashSet<T> {
+        let tree: &Tree<T> = Node::get(&self.root, value);
+        return if tree.is_none() {
+            HashSet::new()
+        } else {
+            let mut set: HashSet<T> = tree.as_ref().unwrap().duplicates.clone();
+            set.insert(tree.as_ref().unwrap().value.clone());
+            set
+        };
+    }
+
+
     /// Find a value and return it as the subtree (equivalent as get but allow to chain operation on the subtree)
+    /// Warning this is Ord based so if there is duplicate you might get the wrong value here but you can check the duplicates to find it
     pub fn find(&self, value: &T) -> Result<Self, &str> {
         let tree: &Tree<T> = Node::get(&self.root, value);
         if tree.is_none() {
@@ -424,19 +508,16 @@ impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display> AvlTree<T> {
         });
     }
 
+
     /// Check if a value is contained in the tree with Ord trait only
     pub fn contains(&self, value: &T) -> bool {
         Node::get(&self.root, value).is_some()
     }
 
-    /// Check if a value is contained in the tree
+    /// Check if a value is contained in the tree with Eq trait
     pub fn contains_exact(&self, value: &T) -> bool {
-
-        let res=Node::get(&self.root, value);
-        if res.is_none(){
-            return false;
-        }
-        return &res.as_ref().unwrap().value==value;
+        let res: HashSet<T> = self.get_set(value);
+        return res.contains(value);
     }
 
     /// Check if the tree is empty or not
@@ -524,11 +605,13 @@ mod test_node {
                 Some(Box::new(Node {
                     children: [None, None],
                     value: TEST_2,
+                    duplicates: HashSet::with_capacity(0),
                     height: 1,
                 })),
                 None
             ],
             value: TEST_1,
+            duplicates: HashSet::with_capacity(0),
             height: 2,
         }));
         let ref_tree: Option<&Box<Node<u64>>> = tree.as_ref();
@@ -549,15 +632,18 @@ mod test_node {
                 Some(Box::new(Node {
                     children: [None, None],
                     value: TEST_2,
+                    duplicates: HashSet::with_capacity(0),
                     height: 1,
                 })),
                 Some(Box::new(Node {
                     children: [None, None],
                     value: TEST_3,
+                    duplicates: HashSet::with_capacity(0),
                     height: 1,
                 })),
             ],
             value: TEST_1,
+            duplicates: HashSet::with_capacity(0),
             height: 2,
         }));
         let ref_tree: Option<&Box<Node<u64>>> = tree.as_ref();
@@ -569,15 +655,18 @@ mod test_node {
                 Some(Box::new(Node {
                     children: [None, None],
                     value: TEST_2,
+                    duplicates: HashSet::with_capacity(0),
                     height: 1,
                 })),
                 Some(Box::new(Node {
                     children: [None, None],
                     value: TEST_3,
+                    duplicates: HashSet::with_capacity(0),
                     height: 2,// incorrect height here (will fail sanity but not balanced)
                 })),
             ],
             value: TEST_1,
+            duplicates: HashSet::with_capacity(0),
             height: 2,
         }));
         let ref_tree: Option<&Box<Node<u64>>> = tree.as_ref();
@@ -590,14 +679,17 @@ mod test_node {
                     children: [Some(Box::new(Node {
                         children: [None, None],
                         value: TEST_3,
+                        duplicates: HashSet::with_capacity(0),
                         height: 1,
                     })), None],
                     value: TEST_2,
+                    duplicates: HashSet::with_capacity(0),
                     height: 2,
                 })),
                 None,
             ],
             value: TEST_1,
+            duplicates: HashSet::with_capacity(0),
             height: 3,
         }));
         let ref_tree: Option<&Box<Node<u64>>> = tree.as_ref();
@@ -612,14 +704,17 @@ mod test_node {
                     children: [Some(Box::new(Node {
                         children: [None, None],
                         value: TEST_3,
+                        duplicates: HashSet::with_capacity(0),
                         height: 1,
                     })), None],
                     value: TEST_2,
+                    duplicates: HashSet::with_capacity(0),
                     height: 22121,
                 })),
                 None,
             ],
             value: TEST_1,
+            duplicates: HashSet::with_capacity(0),
             height: 3,
         }));
         let ref_tree: Option<&Box<Node<u64>>> = tree.as_ref();
@@ -644,22 +739,27 @@ mod test_node {
                     children: [Some(Box::new(Node {
                         children: [None, None],
                         value: TEST_4,
+                        duplicates: HashSet::with_capacity(0),
                         height: 1,
                     })), Some(Box::new(Node {
                         children: [None, None],
                         value: TEST_5,
+                        duplicates: HashSet::with_capacity(0),
                         height: 1,
                     }))],
                     value: TEST_2,
+                    duplicates: HashSet::with_capacity(0),
                     height: 2,
                 })),
                 Some(Box::new(Node {
                     children: [None, None],
                     value: TEST_3,
+                    duplicates: HashSet::with_capacity(0),
                     height: 1,
                 })),
             ],
             value: TEST_1,
+            duplicates: HashSet::with_capacity(0),
             height: 3,
         }));
         let ref_tree: &Box<Node<u64>> = tree.as_ref().unwrap();
@@ -692,23 +792,28 @@ mod test_node {
                 Some(Box::new(Node {
                     children: [None, None],
                     value: TEST_2,
+                    duplicates: HashSet::with_capacity(0),
                     height: 1,
                 })),
                 Some(Box::new(Node {
                     children: [Some(Box::new(Node {
                         children: [None, None],
                         value: TEST_4,
+                        duplicates: HashSet::with_capacity(0),
                         height: 1,
                     })), Some(Box::new(Node {
                         children: [None, None],
                         value: TEST_5,
+                        duplicates: HashSet::with_capacity(0),
                         height: 1,
                     }))],
                     value: TEST_3,
+                    duplicates: HashSet::with_capacity(0),
                     height: 2,
                 })),
             ],
             value: TEST_1,
+            duplicates: HashSet::with_capacity(0),
             height: 3,
         }));
         let ref_tree: &Box<Node<u64>> = tree.as_ref().unwrap();
@@ -734,23 +839,28 @@ mod test_node {
                 Some(Box::new(Node {
                     children: [None, None],
                     value: TEST_2,
+                    duplicates: HashSet::with_capacity(0),
                     height: 1,
                 })),
                 Some(Box::new(Node {
                     children: [Some(Box::new(Node {
                         children: [None, None],
                         value: TEST_4,
+                        duplicates: HashSet::with_capacity(0),
                         height: 1,
                     })), Some(Box::new(Node {
                         children: [None, None],
                         value: TEST_5,
+                        duplicates: HashSet::with_capacity(0),
                         height: 1,
                     }))],
                     value: TEST_3,
+                    duplicates: HashSet::with_capacity(0),
                     height: 2,
                 })),
             ],
             value: TEST_1,
+            duplicates: HashSet::with_capacity(0),
             height: 3,
         }));
 
@@ -774,22 +884,27 @@ mod test_node {
                     children: [Some(Box::new(Node {
                         children: [None, None],
                         value: TEST_4,
+                        duplicates: HashSet::with_capacity(0),
                         height: 1,
                     })), Some(Box::new(Node {
                         children: [None, None],
                         value: TEST_5,
+                        duplicates: HashSet::with_capacity(0),
                         height: 1,
                     }))],
                     value: TEST_2,
+                    duplicates: HashSet::with_capacity(0),
                     height: 2,
                 })),
                 Some(Box::new(Node {
                     children: [None, None],
                     value: TEST_3,
+                    duplicates: HashSet::with_capacity(0),
                     height: 1,
                 })),
             ],
             value: TEST_1,
+            duplicates: HashSet::with_capacity(0),
             height: 3,
         }));
         let res: bool = tree.as_mut().unwrap().rotate(Side::Right);
@@ -812,14 +927,17 @@ mod test_node {
                     children: [Some(Box::new(Node {
                         children: [None, None],
                         value: TEST_3,
+                        duplicates: HashSet::with_capacity(0),
                         height: 1,
                     })), None],
                     value: TEST_2,
+                    duplicates: HashSet::with_capacity(0),
                     height: 2,
                 })),
                 None,
             ],
             value: TEST_1,
+            duplicates: HashSet::with_capacity(0),
             height: 3,
         }));
         let ref_tree: Option<&Box<Node<u64>>> = tree.as_ref();
@@ -843,14 +961,17 @@ mod test_node {
                     children: [Some(Box::new(Node {
                         children: [None, None],
                         value: TEST_3,
+                        duplicates: HashSet::with_capacity(0),
                         height: 1,
                     })), None],
                     value: TEST_2,
+                    duplicates: HashSet::with_capacity(0),
                     height: 2,
                 })),
                 None,
             ],
             value: TEST_1,
+            duplicates: HashSet::with_capacity(0),
             height: 3,
         }));
         let res: bool = tree.as_mut().unwrap().rebalance();
@@ -881,101 +1002,101 @@ mod test_node {
 
     #[test]
     fn test_insert() {
-        let mut node: Node<u64> = Node::create_node(&TEST_1);
-        let res: bool = node.insert(TEST_2);
+        let mut node: Node<u64> = Node::create_node(&1);
+        let res: bool = node.insert(2);
         assert!(res);
-        let res: bool = node.insert(TEST_3);
+        let res: bool = node.insert(3);
         assert!(res);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(4);
         assert!(res);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(5);
         assert!(res);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(6);
         assert!(res);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(7);
         assert!(res);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(8);
         assert!(res);
         assert_eq!(node.height, 4)
     }
 
     #[test]
     fn test_width_depth_count() {
-        let mut node: Node<u64> = Node::create_node(&TEST_4);
+        let mut node: Node<u64> = Node::create_node(&1);
         assert_eq!(node.count(), 1);
         assert_eq!(node.depth(), 1);
         assert_eq!(node.width(), 1);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(2);
         assert!(res);
         assert_eq!(node.count(), 2);
         assert_eq!(node.depth(), 2);
         assert_eq!(node.width(), 2);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(3);
         assert!(res);
         assert_eq!(node.count(), 3);
         assert_eq!(node.depth(), 2);
         assert_eq!(node.width(), 2);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(4);
         assert!(res);
         assert_eq!(node.count(), 4);
         assert_eq!(node.depth(), 3);
         assert_eq!(node.width(), 3);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(5);
         assert!(res);
         assert_eq!(node.count(), 5);
         assert_eq!(node.depth(), 3);
         assert_eq!(node.width(), 3);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(6);
         assert!(res);
         assert_eq!(node.count(), 6);
         assert_eq!(node.depth(), 3);
         assert_eq!(node.width(), 4);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(7);
         assert!(res);
         assert_eq!(node.count(), 7);
         assert_eq!(node.depth(), 3);
         assert_eq!(node.width(), 4);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(8);
         assert!(res);
         assert_eq!(node.count(), 8);
         assert_eq!(node.depth(), 4);
         assert_eq!(node.width(), 5);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(9);
         assert!(res);
         assert_eq!(node.count(), 9);
         assert_eq!(node.depth(), 4);
         assert_eq!(node.width(), 5);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(10);
         assert!(res);
         assert_eq!(node.count(), 10);
         assert_eq!(node.depth(), 4);
         assert_eq!(node.width(), 6);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(11);
         assert!(res);
         assert_eq!(node.count(), 11);
         assert_eq!(node.depth(), 4);
         assert_eq!(node.width(), 6);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(12);
         assert!(res);
         assert_eq!(node.count(), 12);
         assert_eq!(node.depth(), 4);
         assert_eq!(node.width(), 7);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(13);
         assert!(res);
         assert_eq!(node.count(), 13);
         assert_eq!(node.depth(), 4);
         assert_eq!(node.width(), 7);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(14);
         assert!(res);
         assert_eq!(node.count(), 14);
         assert_eq!(node.depth(), 4);
         assert_eq!(node.width(), 8);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(15);
         assert!(res);
         assert_eq!(node.count(), 15);
         assert_eq!(node.depth(), 4);
         assert_eq!(node.width(), 8);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(16);
         assert!(res);
         assert_eq!(node.count(), 16);
         assert_eq!(node.depth(), 5);
@@ -984,21 +1105,21 @@ mod test_node {
 
     #[test]
     fn test_delete() {
-        let mut tree: Tree<u64> = Node::create_tree(&TEST_1);
+        let mut tree: Tree<u64> = Node::create_tree(&1);
         let node: &mut Box<Node<u64>> = tree.as_mut().unwrap();
-        let res: bool = node.insert(TEST_2);
+        let res: bool = node.insert(2);
         assert!(res);
-        let res: bool = node.insert(TEST_3);
+        let res: bool = node.insert(3);
         assert!(res);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(4);
         assert!(res);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(5);
         assert!(res);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(6);
         assert!(res);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(7);
         assert!(res);
-        let res: bool = node.insert(TEST_4);
+        let res: bool = node.insert(8);
         assert!(res);
         assert_eq!(node.height, 4);
         Node::delete(&mut tree);
@@ -1022,7 +1143,7 @@ mod test_node {
 
     #[test]
     fn test_dump() {
-        #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+        #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
         struct Position {
             x: i32,
         }
@@ -1232,26 +1353,30 @@ mod test_node {
     }
 }
 
-impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display> Node<T> {
-    fn insert(&mut self, new_payload: T) -> bool {
-        if self.value == new_payload {
-            // we could decide to not insert double nodes
-            //return false ;
+impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display + Hash> Node<T> {
+    fn insert(&mut self, new_value: T) -> bool {
+        if new_value <= self.value && self.value <= new_value {
+            if self.duplicates.contains(&new_value) {
+                return false;
+            }
+            self.duplicates.insert(new_value);
+            return true;
         }
-        let target_node: &mut Tree<T> = if new_payload <= self.value { &mut self.children[Side::Left as usize] } else { &mut self.children[Side::Right as usize] };
+        let mut res = true;
+        let target_node: &mut Tree<T> = if new_value <= self.value { &mut self.children[Side::Left as usize] } else { &mut self.children[Side::Right as usize] };
         match target_node {
             &mut Some(ref mut subnode) => {
-                subnode.insert(new_payload);
+                res = subnode.insert(new_value);
             }
             &mut None => {
-                let new_node = Node { children: [None, None], value: new_payload, height: 1 };
+                let new_node = Node { children: [None, None], value: new_value, duplicates: HashSet::with_capacity(0), height: 1 };
                 let boxed_node = Some(Box::new(new_node));
                 *target_node = boxed_node;
             }
         }
         self.update_height();
         self.rebalance();
-        true
+        res
     }
 
     fn create_tree(value: &T) -> Tree<T> {
@@ -1262,6 +1387,7 @@ impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display> Node<T> {
         Node {
             children: [None, None],
             value: value.clone(),
+            duplicates: HashSet::with_capacity(0),
             height: 1,
         }
     }
@@ -1270,6 +1396,7 @@ impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display> Node<T> {
         if node.is_some() {
             Self::delete(node.as_mut().unwrap().children[Side::Left as usize].take().borrow_mut());
             Self::delete(node.as_mut().unwrap().children[Side::Right as usize].take().borrow_mut());
+            node.as_mut().unwrap().duplicates.clear();
             node.take();
         }
     }
@@ -1290,19 +1417,39 @@ impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display> Node<T> {
 
     fn remove(node: &mut Tree<T>, value: &T) -> Option<T> {
         if node.is_some() {
-            return if &node.as_ref().unwrap().value == value {
-                if node.as_ref().unwrap().children[Side::Right as usize].is_some() {
-                    let value: T = Self::remove_min(&mut node.as_mut().unwrap().children[Side::Right as usize]);
-                    let old: T = replace(&mut node.as_mut().unwrap().value, value);
-                    node.as_mut().unwrap().rebalance();
-                    Some(old)
-                } else {
-                    let left: Tree<T> = node.as_mut().unwrap().children[Side::Left as usize].take();
-                    let tree: Tree<T> = replace(node, left);
-                    if node.is_some() {
+            return if &node.as_ref().unwrap().value <= value && value <= &node.as_ref().unwrap().value {
+                if &node.as_ref().unwrap().value == value && node.as_ref().unwrap().duplicates.is_empty() {
+                    if node.as_ref().unwrap().children[Side::Right as usize].is_some() {
+                        let value: T = Self::remove_min(&mut node.as_mut().unwrap().children[Side::Right as usize]);
+                        let old: T = replace(&mut node.as_mut().unwrap().value, value);
                         node.as_mut().unwrap().rebalance();
+                        Some(old)
+                    } else {
+                        let left: Tree<T> = node.as_mut().unwrap().children[Side::Left as usize].take();
+                        let tree: Tree<T> = replace(node, left);
+                        if node.is_some() {
+                            node.as_mut().unwrap().rebalance();
+                        }
+                        tree.map_or(None, |node| Some(node.value))
                     }
-                    tree.map_or(None, |node| Some(node.value))
+                } else {
+
+                    if &node.as_ref().unwrap().value == value {
+                        let new_value: Option<T> = node.as_ref().unwrap().duplicates.iter().next().cloned();
+                        if new_value.is_none() {
+                            return None;
+                        }
+                        let new_value: T = new_value.unwrap();
+                        node.as_mut().unwrap().duplicates.remove(&new_value);
+                        Some(replace(&mut node.as_mut().unwrap().value, new_value))
+                    } else {
+                        if node.as_mut().unwrap().duplicates.remove(&value){
+                            Some(value.clone())
+                        }else{
+                            None
+                        }
+
+                    }
                 }
             } else {
                 let target_node: &mut Tree<T> = if value <= &node.as_mut().unwrap().value { &mut node.as_mut().unwrap().children[Side::Left as usize] } else { &mut node.as_mut().unwrap().children[Side::Right as usize] };
@@ -1311,7 +1458,7 @@ impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display> Node<T> {
                 res
             };
         }
-        None
+        return None;
     }
 
     fn get(tree: &'a Tree<T>, value: &T) -> &'a Tree<T> {
@@ -1370,9 +1517,6 @@ impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display> Node<T> {
         return string_node + &*(if prettify { "\n".to_string() + &*( "   ".repeat(max(height,1)-1)) } else { String::new() }) + "]";
     }
 
-    /*
-     Check only if the height were correctly put in the tree (does not check if balanced
-     */
     fn sanity_check(&self) -> bool {
         let mut is_correct: bool = self.height() == (1 + max(self.left_height(), self.right_height()));
         if self.children[Side::Left as usize].is_some() {
@@ -1497,7 +1641,7 @@ impl<'a, T: 'a + Clone + Ord + Eq + Debug + Display> Node<T> {
         } else {
             right = 0;
         }
-        return 1 + left + right;
+        return 1 + self.duplicates.len() + left + right;
     }
 
     fn max(&self) -> &T {
