@@ -1,0 +1,20 @@
+[package]
+name = "truetree"
+version = "0.1.0"
+authors = ["Neil <neilhube12@gmail.com>"]
+edition = "2018"
+description = "Trees in Rust"
+categories = ["algorithms", "data-structures"]
+license = "MIT"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.release]
+opt-level = 3
+
+[lib]
+name = "truetree"
+path = "src/lib.rs"
